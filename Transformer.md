@@ -11,7 +11,7 @@
 正如文中提到大多数的序列传导模型都含有encoder-decoder结构，Transformer的encoder是将一段表征序列 $(x_1,\cdots,x_n)$ 映射为另一种连续表示的序列 $(z_1,\cdots,z_n)$，即encoder的输出信息；而decoder是将encoder输出和decoder前一步的输出**自回归**的共同生成序列 $(y_1,\cdots,y_m)$。举个例子，现在有一个机器翻译任务，首先将句子embedding为高维向量，输入encoder中，其输出随后输入decoder进行解码得到最终翻译结果，如下图所示。
 ![Encoder-Decoder](https://img-blog.csdnimg.cn/f8ce9677197d4d7e8f2dd0f7f2ad5da1.png#pic_center)
 
-需要注意的是，Transformer的输出$y_i$是一次一次自回归的生成的，也就是每一次输出都需要调用最后一层encoder的输出序列。这里不像多层RNN隐层的并行传递，Transformer是串行的。
+需要注意的是，Transformer的输出 $y_i$ 是一次一次自回归的生成的，也就是每一次输出都需要调用最后一层encoder的输出序列。这里不像多层RNN隐层的并行传递，Transformer是串行的。
 
 ### Encoder和Decoder
 好了，接下来该介绍encoder和decoder的神秘面纱了，如下图所示。
@@ -33,7 +33,7 @@
 谈到注意力机制，像我们人一样，看到一幅图片，我们会关注其强烈的表征现象，能让我们快速了解新事物的信息，如下图所示。特别在处理NLP任务中，长距离的记忆能力是一个难题，引入注意力机制，关注更重要的词，可以缓解这一现象。
 ![在这里插入图片描述](./assets/transformer/transformer_4.png)
 
-在Transformer中，每个单词embedding为三个不同的向量，分别是 $Query$ 向量 $Q$、$Key$ 向量 $K$ 和 $Value$ 向量 $V$。具体来说，对于一个句子，只需要将其输入到三个linear层，通过学习三个 $W$ 参数就能得到不一样的 $Q、K、V$。至于为什么说 $Q、K、V$ 要不一样，其实一样也可以，但是这里为了**增强数据的表达能力**，保证在 $QK^T$ 矩阵内积时可以**得到不同的空间投影**，**提高模型泛化能力**。
+在Transformer中，每个单词embedding为三个不同的向量，分别是 $Query$ 向量 $Q$、$Key$向量 $K$ 和 $Value$ 向量 $V$。具体来说，对于一个句子，只需要将其输入到三个linear层，通过学习三个 $W$ 参数就能得到不一样的 $Q、K、V$。至于为什么说 $Q、K、V$ 要不一样，其实一样也可以，但是这里为了**增强数据的表达能力**，保证在 $QK^T$ 矩阵内积时可以**得到不同的空间投影**，**提高模型泛化能力**。
 
 生成的 $Q、K、V$ 矩阵后便可以进行attention计算了，如下图所示
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/e3460263addc4f178031d4830281bf68.png#pic_center)
@@ -147,7 +147,7 @@ $Y_{out}$ 是 $x_{25},\cdots, x_{72}$ 用于计算Loss
 
 拼接 $y_{0}, \hat{y_{1}}, \hat{y_{2}}$=(1, 3, 1) --> (1, 3, 1)，取最后一刻即(1, 1, 1)== $\hat{y}_{3}$
 
-重复直到生成 $\hat{y}_{1}, \cdots \hat{y}_{48}$ **（注意Mask Attention部分可以缓存 $K_{old}$和$V_{old}$，下一步直接计算新pre值的K和V，分别拼接 $K_{old}$和$V_{old}$，能减少许多不必要的计算。）**
+重复直到生成 $\hat{y}_{1}, \cdots \hat{y}_{48}$ **（注意Mask Attention部分可以缓存 $K_{old}$ 和 $V_{old}$，下一步直接计算新pre值的K和V，分别拼接 $K_{old}$ 和 $V_{old}$，能减少许多不必要的计算。）**
 
 ## 总结
 
