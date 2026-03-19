@@ -11,8 +11,7 @@
 正如文中提到大多数的序列传导模型都含有encoder-decoder结构，Transformer的encoder是将一段表征序列$(x_1,\cdots,x_n)$映射为另一种连续表示的序列$(z_1,\cdots,z_n)$，即encoder的输出信息；而decoder是将encoder输出和decoder前一步的输出**自回归**的共同生成序列$(y_1,\cdots,y_m)$。举个例子，现在有一个机器翻译任务，首先将句子embedding为高维向量，输入encoder中，其输出随后输入decoder进行解码得到最终翻译结果，如下图所示。
 ![Encoder-Decoder](https://img-blog.csdnimg.cn/f8ce9677197d4d7e8f2dd0f7f2ad5da1.png#pic_center)
 
-需要注意的是，Transformer的输出$y_i$是一次一次自回归的生成的，也就是每一次输出都需要调用最后一层encoder的输出序列。这里不像多层RNN隐层的并行传递，Transformer是串行的。如下图所示。
-![多层Transformer](./assets/transformer/transformer_1.jpg)
+需要注意的是，Transformer的输出$y_i$是一次一次自回归的生成的，也就是每一次输出都需要调用最后一层encoder的输出序列。这里不像多层RNN隐层的并行传递，Transformer是串行的。
 
 ### Encoder和Decoder
 好了，接下来该介绍encoder和decoder的神秘面纱了，如下图所示。
@@ -26,7 +25,7 @@
 这里说到作者实验用到了6层的encoder（串行），这里是为了学到更多的语义信息。并且每层encoder都包含两个子层，分别是**多头注意力机制Multi-head attention**和**前馈神经网络FFN**。当然了，作者对两个子层的输出都做了**residual连接**和**Layer normalization(LN)**，加了残差连接是为了网络能搭的更深，并且容易训练，防止梯度消失；而LN完全是针对**每一个样本**自身的特征缩放，能将每个词都归一为相同空间的语义信息。BN也是一种常见的特征缩放方法，常用于CNN，不适用于NLP任务，因为其对所有batch的同一个特征做缩放，在图像中是非常友好的，而NLP中每一个sequence的长度是不一样的，所以在同一个batch中越长的语句得不到充分的缩放表示。
 
 #### Decoder
-![Dec](./assets/transformer/transformer_3.png)
+![](./assets/transformer/transformer_3.png)
 
 同样的，作者实验用到了6层decoder（串行），不同于encoder，这里作者还设置了**mask**的multi-head attention，其原因在于在解码时，模型是看不到整条句子的，因此，必须在当前时刻掩码掉后面的词（**只能往前看，不能往后看**），才能做到正确训练和有效预测。
 
@@ -40,11 +39,11 @@
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/e3460263addc4f178031d4830281bf68.png#pic_center)
 
 假设有三个矩阵$Q、K、V$，维度分别为$(d_q, d_{model})、(d_k, d_{model})、(d_v, d_{model})$，其中$q=k=v$。
-1. 首先进入的是**Multi-Head Attention**多头注意力机制。这里可以h层，也就是我们说的`多头`，类似cv中的channel数量，能学习更多维度信息。多头注意力机制中包含了Scaled Dot-product Attention，也是**self-attention**。
-2. 其次进入self-attention，对于每个sequence，用它的query矩阵: $(d_q, d_{model})$和key向量shape: $(d_k, d_{model})$进行内积，本质上是求解每个词之间的`余弦相似度`，如果两者相似度较高，则赋予较大的值来反应两者的关系，反之如果是正交的，内积为0，则它们就没有相似性，这里输出的attention score矩阵维度是shape: $(d_q, d_k)$。
-3. 再次将输出矩阵进行scale缩放相似度，因为$d_{model}$一般会比较大，导致矩阵数值大小不一，使得softmax容易推向饱和区01，使得收敛困难，公式如$\text{Attention}(Q、K、V)$所示。
-4. 从次是通过可选的mask操作，为了保证decoder得不到sequence的leak信息。具体来说是通过将权重矩阵$QK^T$上三角改为负无穷，这样softmax就能将这些值推为0，即无权重，保证mask的作用。
-5. 最后将attention score矩阵shape: $(d_q, d_{k})$与Value矩阵shape: $(d_v, d_{model})$内积，得到encoder后的sequence信息表征shape: $(d_q, d_{model})$。
+1. 进入的是**Multi-Head Attention**多头注意力机制。这里可以h层，也就是我们说的`多头`，类似cv中的channel数量，能学习更多维度信息。多头注意力机制中包含了Scaled Dot-product Attention，也是**self-attention**。
+2. 进入self-attention，对于每个sequence，用它的query矩阵: $(d_q, d_{model})$和key向量shape: $(d_k, d_{model})$进行内积，本质上是求解每个词之间的`余弦相似度`，如果两者相似度较高，则赋予较大的值来反映两者的关系，反之如果是正交的，内积为0，则它们就没有相似性，这里输出的attention score矩阵维度是shape: $(d_q, d_k)$。
+3. 将输出矩阵进行scale缩放相似度，因为$d_{model}$一般会比较大，导致矩阵数值大小不一，使得softmax容易推向饱和区01，使得收敛困难，公式如$\text{Attention}(Q、K、V)$所示。
+4. 通过可选的mask操作，为了保证decoder得不到sequence的leak信息。具体来说是通过将权重矩阵$QK^T$上三角改为负无穷，这样softmax就能将这些值推为0，即无权重，保证mask的作用。
+5. 将attention score矩阵shape: $(d_q, d_{k})$与Value矩阵shape: $(d_v, d_{model})$内积，得到encoder后的sequence信息表征shape: $(d_q, d_{model})$。
 
 Scale缩放公式：
 $$
@@ -100,7 +99,7 @@ $$
 举个例子，现在有一个任务，根据历史24个点$(x_1,\cdots, x_{24})$预测未来48个点$(x_{25},\cdots, x_{72})$。
 
 一个样本对：
-$X: (batch=32, seq=24, fea=1)$,
+$X: (batch=32, seq=24, fea=1)$
 $Y_{in}: (batch=32, seq=48, fea=1)$
 $Y_{out}: (batch=32, seq=48, fea=1)$
 
